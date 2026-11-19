@@ -1,56 +1,86 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.app.name }}
+  name: {{ include "lab-cloudflare-tunnel.fullname" . }}
   labels:
-    app: {{ .Values.app.name }}
+    {{- include "lab-cloudflare-tunnel.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.app.replicaCount }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.app.name }}
+      {{- include "lab-cloudflare-tunnel.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: {{ .Values.app.name }}
+        {{- include "lab-cloudflare-tunnel.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
-      {{- with .Values.app.podSecurityContext }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lab-cloudflare-tunnel.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.app.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      automountServiceAccountToken: false
-      volumes:
-        - name: {{ .Values.pvc.name }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.pvc.name }}
-        - name: {{ .Values.configMap.name }}
-          configMap:
-            name: {{ .Values.configMap.name }}
       containers:
-        - name: {{ .Values.app.name }}
-          image: "{{ .Values.app.image }}:{{ .Values.app.tag }}"
-          imagePullPolicy: {{ .Values.app.pullPolicy }}
-          {{- with .Values.app.securityContext }}
+        - name: cloudflared
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          command:
+            - cloudflared
+            - tunnel
+            # We regulate the cloudflared version via an image tag.
+            - --no-autoupdate
+            # In a k8s environment, the metrics server needs to listen on 0.0.0.0
+            # for liveness/readiness probes.
+            - --metrics
+            - 0.0.0.0:{{ .Values.metrics.port }}
+            - run
           ports:
-            - containerPort: {{ .Values.app.port }}
-              name: {{ .Values.app.name }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
           env:
-            - name: ENV
-              value: {{ .Values.app.env | quote }}
-          volumeMounts:
-            - name: {{ .Values.pvc.name }}
-              mountPath: /tmp/data
-            - name: {{ .Values.configMap.name }}
-              mountPath: /app/{{ .Values.configMap.file }}
-              subPath: {{ .Values.configMap.file }}
-          {{- with .Values.app.resources }}
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lab-cloudflare-tunnel.secretName" . }}
+                  key: {{ .Values.cloudflare.secretKey | default "token" }}
+          livenessProbe:
+            httpGet:
+              # Cloudflared has a /ready endpoint which returns 200 if and only if
+              # it has an active connection to the edge.
+              path: /ready
+              port: metrics
+            failureThreshold: 1
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

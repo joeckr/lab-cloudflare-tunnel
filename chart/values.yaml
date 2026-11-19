@@ -1,53 +1,71 @@
-app:
-  image: ghcr.io/joeckr/oci-modified
-  name: oci-modified
-  env: "dev"
-  podSecurityContext:
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-    fsGroup: 1031
-  port: 8080
-  pullPolicy: Always
-  replicaCount: 1
-  resources:
-    limits:
-      cpu: 250m
-      memory: 256Mi
-  securityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: false
-    capabilities:
-      drop:
-        - ALL
-  tag: latest
-  tolerations:
-    - key: "node-role.kubernetes.io/control-plane"
-      operator: "Exists"
-      effect: "NoSchedule"
-    - key: "node-role.kubernetes.io/master"
-      operator: "Exists"
-      effect: "NoSchedule"
+# Default values for lab-cloudflare-tunnel (remotely managed cloudflared tunnel).
 
-pvc:
-  name: template-pvc
-  storageAccessMode: ReadWriteOnce
-  storageSize: 1Gi
-  storageClass: ""
+cloudflare:
+  # Name of the pre-existing Kubernetes Secret containing the tunnel token.
+  secretName: "tunnel-token"
+  # The key inside the Secret that stores the tunnel token string.
+  secretKey: "token"
 
-configMap:
-  name: template-config
-  file: template.txt
+image:
+  repository: cloudflare/cloudflared
+  pullPolicy: IfNotPresent
+  # Tag for cloudflare/cloudflared (defaults to "latest").
+  tag: "latest"
 
-service:
-  name: template-service
-  port: 8080
-  type: NodePort
+replicaCount: 1
 
-ingress:
-  enabled: true
-  name: template-ingress
-  host: "test.joeckr.dev"  # Put your own domain here
-  className: "nginx"
-  path: /
-  pathType: "Prefix"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# Hardened pod security context (Kubernetes PSS restricted compliant)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# Hardened container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+metrics:
+  port: 2000
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+
+tolerations:
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+  - key: "node-role.kubernetes.io/master"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+affinity: {}

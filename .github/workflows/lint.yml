@@ -16,12 +16,6 @@ jobs:
       contents: read
       pull-requests: read  # required to fetch PR metadata
     uses: joeckr/ci-templates/.github/workflows/commitlint.yml@578d91388a3f7862fb51c4d2e685586a4d7d1daf  # v1.20.3
-  hadolint:
-    permissions:
-      contents: read
-    uses: joeckr/ci-templates/.github/workflows/hadolint.yml@578d91388a3f7862fb51c4d2e685586a4d7d1daf  # v1.20.3
-    with:
-      dockerfile: 'Dockerfile'
   shellcheck:
     permissions:
       contents: read
