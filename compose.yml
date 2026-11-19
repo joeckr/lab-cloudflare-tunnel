@@ -1,17 +1,14 @@
 services:
-  template:
-    container_name: template
-    build:
-      context: .
-      dockerfile: Dockerfile
+  cloudflared:
+    container_name: cloudflare-tunnel
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 0.0.0.0:2000
+      - run
     environment:
-      - ENV=dev
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:-}
     ports:
-      - "8080:8080"
-    volumes:
-      - template-data:/app/template-data
-      - ./template.txt:/app/template.txt
-
-volumes:
-  template-data:
-    driver: local

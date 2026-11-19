@@ -4,7 +4,6 @@ betterleaks = "latest"
 trivy = "v0.74.0"
 helm = "v3.14.0"
 actionlint = "v1.7.1"
-hadolint = "2.15.1"
 shellcheck = "latest"
 zizmor = "latest"
 hk = "latest"
@@ -18,16 +17,10 @@ run = """
 hk install --mise
 """
 
-[tasks.build]
-description = "Build the application"
-run = """
-podman buildx build --platform linux/amd64 -t ghcr.io/joeckr/oci-modified:test . --load
-"""
-
 [tasks.compose]
-description = "Run Podman Compose"
+description = "Run Podman Compose for local lab"
 run = """
-podman compose up -d --build
+podman compose up -d
 """
 
 [tasks.down]
@@ -100,11 +93,4 @@ helm dependency build chart/
 description = "Run Trivy on the file system"
 run = """
 trivy fs .
-"""
-
-[tasks.trivy-i]
-description = "Run Trivy on the Podman image"
-depends = ["build"]
-run = """
-trivy image ghcr.io/joeckr/oci-modified:test
 """
