@@ -230,6 +230,12 @@ Commits must follow [Conventional Commits](https://www.conventionalcommits.org/)
 
 On merge to `main`, `.github/workflows/release.yml` automatically calculates the next version, updates `chart/Chart.yaml`, creates the Git tag and GitHub Release, and pushes the Helm chart to GHCR.
 
+## Support
+
+If you find this project useful, consider supporting my work on [Ko-fi](https://ko-fi.com/joeckr):
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/joeckr)
+
 ## License
 
 Please refer to the [LICENSE](LICENSE) file for details.
