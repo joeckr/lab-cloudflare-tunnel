@@ -11,9 +11,14 @@ spec:
       {{- include "lab-cloudflare-tunnel.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- if or .Values.cloudflare.secretCreate .Values.podAnnotations }}
       annotations:
+        {{- if .Values.cloudflare.secretCreate }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       labels:
         {{- include "lab-cloudflare-tunnel.selectorLabels" . | nindent 8 }}
