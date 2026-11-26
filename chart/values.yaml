@@ -1,10 +1,14 @@
 # Default values for lab-cloudflare-tunnel (remotely managed cloudflared tunnel).
 
 cloudflare:
-  # Name of the pre-existing Kubernetes Secret containing the tunnel token.
+  # Set secretCreate: true with token only for local/dev testing; leave false when using ESO/external secrets.
+  secretCreate: false
+  # Name of the Kubernetes Secret containing the tunnel token.
   secretName: "tunnel-token"
   # The key inside the Secret that stores the tunnel token string.
   secretKey: "token"
+  # Tunnel token value (only used when secretCreate is true).
+  token: ""
 
 image:
   repository: cloudflare/cloudflared
